@@ -1,0 +1,14 @@
+# ローカル開発用の秘密。これをコピーして `.dev.vars` を作る（.dev.vars は git 無視）。
+# 本番(Cloudflare)へは `wrangler secret put <NAME>` で別途登録すること。
+
+# --- HoYoLAB プロバイダ ---
+# 単一アカウント。複数なら改行で区切る。
+HOYOLAB_COOKIE="ltuid_v2=ここにltuid_v2; ltoken_v2=ここにltoken_v2"
+
+# --- Endfield プロバイダ (SKPort / Gryphline) ---
+# Gryphline account token。改行で複数アカウント可。
+ENDFIELD_TOKEN="ここにaccount_token"
+
+# --- 共通 ---
+DISCORD_WEBHOOK=""   # 通知先（任意）
+TRIGGER_TOKEN=""     # 手動トリガ保護（任意）
