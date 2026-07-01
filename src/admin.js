@@ -2,31 +2,12 @@
  * /admin — クレデンシャルを KV に保存する管理 UI。
  * フォームは各プロバイダの credential 宣言から自動生成される（プロバイダを足すと項目も増える）。
  *
- * 認証: Cloudflare Access で /admin* を保護する前提。Access が本人確認済みのとき
- * リクエストに Cf-Access-Jwt-Assertion ヘッダが付く。これが無ければ 403（fail-closed）。
- *   ※ workers.dev 経由の直アクセスはこのヘッダを偽装可能なので、本番では
- *     ・カスタムドメインの /admin* を Access で保護
- *     ・workers.dev ルートを無効化
- *   の両方を必ず行うこと（README 参照）。
+ * 認証: エントリ(index.js)で Cloudflare Access の JWT 検証を全 HTTP に適用済み。
+ * ここに来た時点で本人確認は通過しているので、このモジュールは認証を行わない。
  */
 
 import { ALL } from "./providers/registry.js";
 import { loadCredential, saveCredential } from "./credentials.js";
-
-function isLocalDev(url) {
-  return url.hostname === "localhost" || url.hostname === "127.0.0.1";
-}
-
-function accessGate(req, url) {
-  if (isLocalDev(url)) return null; // ローカル開発は素通し
-  if (!req.headers.get("Cf-Access-Jwt-Assertion")) {
-    return new Response(
-      "403 Forbidden: Cloudflare Access で保護されていません。README の Access 設定を確認してください。",
-      { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } }
-    );
-  }
-  return null;
-}
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -71,8 +52,6 @@ async function renderForm(env, saved) {
 
 export async function handleAdmin(req, env) {
   const url = new URL(req.url);
-  const blocked = accessGate(req, url);
-  if (blocked) return blocked;
 
   if (url.pathname === "/admin/save" && req.method === "POST") {
     const form = await req.formData();

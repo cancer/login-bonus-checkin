@@ -15,4 +15,7 @@ CRED_ENDFIELD="ここにaccount_token"
 
 # --- 共通 ---
 SLACK_WEBHOOK=""     # 通知先 Slack Incoming Webhook（任意）
-TRIGGER_TOKEN=""     # 手動トリガ保護（任意）
+
+# Cloudflare Access の JWT 検証は localhost では素通しなので、
+# ローカル開発に ACCESS_AUD / ACCESS_TEAM_DOMAIN は不要。
+# 本番では `wrangler secret put ACCESS_AUD` / `... ACCESS_TEAM_DOMAIN` で登録する。

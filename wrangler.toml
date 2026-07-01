@@ -27,10 +27,10 @@ HOYOLAB_GAMES = "zzz"
 NOTIFY_ON_SUCCESS = "0"
 
 # --- 秘密（wrangler secret put で登録。ここには書かない）---
-#   SLACK_WEBHOOK   : 通知先 Slack Incoming Webhook URL（任意）
-#   TRIGGER_TOKEN   : 手動トリガ用トークン（任意）
+#   ACCESS_AUD         : Cloudflare Access アプリの Audience タグ（JWT 検証用）
+#   ACCESS_TEAM_DOMAIN : <team>.cloudflareaccess.com（JWKS 取得用）
+#   SLACK_WEBHOOK      : 通知先 Slack Incoming Webhook URL（任意）
 #
+# ACCESS_* が未設定だと全 HTTP が 503（fail-closed）。デプロイ後に必ず登録すること。
 # クレデンシャル本体（HoYoLAB Cookie / Endfield token）は secret ではなく
 # /admin から KV に保存する。ローカル開発では .dev.vars の CRED_<ID> でも可。
-#
-# /admin は Cloudflare Access で必ず保護すること（README 参照）。
