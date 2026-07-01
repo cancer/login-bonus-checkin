@@ -25,8 +25,9 @@ function page(body) {
   .ok{background:#e6ffed;border:1px solid #3fb950;padding:.5rem .8rem;border-radius:6px}
   .set{color:#3fb950} .unset{color:#999}
   .extract{background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:.5rem .7rem;margin:.3rem 0 .5rem;font-size:.85rem}
-  .extract code{display:block;white-space:pre-wrap;word-break:break-all;background:#fff;border:1px solid #d0d7de;border-radius:4px;padding:.4rem;margin:.4rem 0;font-family:ui-monospace,monospace}
-  .extract a{font-weight:600}
+  .extract code.block{display:block;white-space:pre-wrap;word-break:break-all;background:#fff;border:1px solid #d0d7de;border-radius:4px;padding:.4rem;margin:.4rem 0;font-family:ui-monospace,monospace}
+  .extract code{background:#eef1f4;padding:0 .25rem;border-radius:3px;font-family:ui-monospace,monospace}
+  .extract a.bm{font-weight:600;display:inline-block;border:1px dashed #999;border-radius:4px;padding:.2rem .5rem;text-decoration:none}
   .copybtn{margin:0;padding:.3rem .8rem;font-size:.8rem}
 </style></head><body>${body}</body></html>`;
 }
@@ -38,11 +39,17 @@ function extractBlock(p) {
   const open = e.site ? `<a href="${esc(e.site)}" target="_blank" rel="noopener">${esc(e.site)}</a> を開き、` : "";
   if (e.script) {
     const id = `script-${esc(p.id)}`;
+    const bm = e.bookmarklet
+      ? `<p style="margin:.6rem 0 0">コンソールが貼り付けを拒否する場合はこちら（コンソール不要）:
+          下のリンクを<b>ブックマークバーにドラッグ</b> → サイトを開いてそのブックマークをクリック。
+          <br><a class="bm" href="${esc(e.bookmarklet)}" onclick="alert('このリンクはブックマークバーにドラッグしてから、対象サイト上でクリックしてください');return false;">📌 ${esc(p.name)} token を取得</a></p>`
+      : "";
     return `<div class="extract">
-      ${open}F12 → Console に貼って実行すると、値がクリップボードにコピーされます。
-      それを下の欄に貼り付け。
-      <code id="${id}">${esc(e.script)}</code>
+      ${open}F12 → Console に貼って実行すると、値がクリップボードにコピーされます。それを下の欄に貼り付け。
+      <br><small>※ コンソールが貼り付けを拒否したら、コンソールに <code>allow pasting</code> と入力して Enter してから貼り付け。</small>
+      <code id="${id}" class="block">${esc(e.script)}</code>
       <button type="button" class="copybtn" data-copy="${id}">スクリプトをコピー</button>
+      ${bm}
     </div>`;
   }
   if (e.manual) {

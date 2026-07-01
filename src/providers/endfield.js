@@ -161,6 +161,11 @@ export const endfield = {
       site: "https://game.skport.com/endfield/sign-in",
       // localStorage は JS から読めるのでスクリプトで自動化可（clipboard にコピー）。
       script: `copy(JSON.parse(localStorage.getItem("SK_TOKEN_CACHE_KEY")).content)`,
+      // コンソール貼り付けが拒否される場合用。ブックマークバーにドラッグして使う。
+      bookmarklet:
+        `javascript:(async()=>{try{const t=JSON.parse(localStorage.getItem('SK_TOKEN_CACHE_KEY')).content;` +
+        `await navigator.clipboard.writeText(t);alert('Endfield token をコピーしました。/admin の欄に貼り付けてください');}` +
+        `catch(e){alert('取得失敗: '+e.message)}})()`,
     },
   },
   // 生文字列 → 1 アカウント分の token に正規化（URL エンコードを剥がす）
