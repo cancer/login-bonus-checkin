@@ -162,15 +162,10 @@ export const endfield = {
     multiAccount: true,
     extract: {
       site: "https://game.skport.com/endfield/sign-in",
-      // ACCOUNT_TOKEN Cookie を document.cookie から読む。HttpOnly なら取れないので手動誘導。
-      script:
-        `(()=>{const m=document.cookie.match(/(?:^|; )ACCOUNT_TOKEN=([^;]+)/);` +
-        `copy(m?m[1]:'NOT FOUND: ACCOUNT_TOKEN は HttpOnly かも。Cookie パネルから手動コピーしてください')})()`,
-      bookmarklet:
-        `javascript:(async()=>{const m=document.cookie.match(/(?:^|; )ACCOUNT_TOKEN=([^;]+)/);` +
-        `if(!m){alert('ACCOUNT_TOKEN が document.cookie に無い（HttpOnly かも）。DevTools → Application → Cookies → ACCOUNT_TOKEN を Show URL-encoded で手動コピーしてください');return;}` +
-        `try{await navigator.clipboard.writeText(m[1]);alert('ACCOUNT_TOKEN をコピーしました。/admin の欄に貼り付けてください');}` +
-        `catch(e){alert('コピー失敗: '+e.message)}})()`,
+      // ACCOUNT_TOKEN は HttpOnly Cookie でページ JS から読めない → 手動コピーのみ。
+      manual:
+        "DevTools → Application → Cookies → https://game.skport.com で ACCOUNT_TOKEN を選び、" +
+        "Show URL-encoded にチェックして値をコピーし、下の欄へ。（HttpOnly Cookie なのでスクリプト取得不可）",
     },
   },
   // 生文字列 → 1 アカウント分の token に正規化（URL エンコードを剥がす）
