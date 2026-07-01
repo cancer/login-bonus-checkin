@@ -6,8 +6,9 @@
  * Cf-Access-Jwt-Assertion を、Access の公開鍵(JWKS)で署名検証して初めて本物と断定する。
  *
  * 必要な env（値はチャット/リポジトリに出さず wrangler secret put で登録）:
- *   ACCESS_AUD          : Access アプリの Audience タグ
- *   ACCESS_TEAM_DOMAIN  : <team>.cloudflareaccess.com
+ *   ACCESS_AUD        : Access アプリの Audience タグ
+ *   ACCESS_CERTS_URL  : ダッシュボードに表示される JWK(certs) の URL をそのまま
+ *                       （例: https://<team>.cloudflareaccess.com/cdn-cgi/access/certs）
  *
  * どちらか未設定なら本番は 503（fail-closed）。localhost 開発は素通し。
  */
@@ -29,25 +30,16 @@ function b64urlToString(s) {
   return new TextDecoder().decode(b64urlToBytes(s));
 }
 
-// ACCESS_TEAM_DOMAIN は「素のドメイン」「https付き」「フル certs URL」いずれでも受ける。
-function certsUrl(teamDomainOrUrl) {
-  let v = String(teamDomainOrUrl).trim().replace(/\/+$/, "");
-  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
-  if (!v.includes("/cdn-cgi/access/certs")) v = `${v}/cdn-cgi/access/certs`;
-  return v;
-}
-
-async function getKeys(teamDomain) {
-  const url = certsUrl(teamDomain);
-  if (jwksCache && jwksCache.url === url) return jwksCache.keys;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`JWKS 取得失敗: ${res.status} (${url})`);
+async function getKeys(certsUrl) {
+  if (jwksCache && jwksCache.url === certsUrl) return jwksCache.keys;
+  const res = await fetch(certsUrl);
+  if (!res.ok) throw new Error(`JWKS 取得失敗: ${res.status} (${certsUrl})`);
   const json = await res.json();
-  jwksCache = { url, keys: json.keys || [] };
+  jwksCache = { url: certsUrl, keys: json.keys || [] };
   return jwksCache.keys;
 }
 
-async function verifyToken(token, aud, teamDomain) {
+async function verifyToken(token, aud, certsUrl) {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("JWT 形式不正");
   const [h, p, s] = parts;
@@ -56,7 +48,7 @@ async function verifyToken(token, aud, teamDomain) {
   const payload = JSON.parse(b64urlToString(p));
   if (header.alg !== "RS256") throw new Error(`未対応 alg: ${header.alg}`);
 
-  const keys = await getKeys(teamDomain);
+  const keys = await getKeys(certsUrl);
   const jwk = keys.find((k) => k.kid === header.kid);
   if (!jwk) throw new Error("署名鍵(kid)が見つからない");
 
@@ -99,16 +91,16 @@ export async function requireAccess(req, env) {
   if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return null; // dev bypass
 
   const aud = env.ACCESS_AUD;
-  const team = env.ACCESS_TEAM_DOMAIN;
-  if (!aud || !team) {
-    return textResp(503, "Cloudflare Access 未設定: ACCESS_AUD / ACCESS_TEAM_DOMAIN を登録してください");
+  const certsUrl = env.ACCESS_CERTS_URL;
+  if (!aud || !certsUrl) {
+    return textResp(503, "Cloudflare Access 未設定: ACCESS_AUD / ACCESS_CERTS_URL を登録してください");
   }
 
   const token = req.headers.get("Cf-Access-Jwt-Assertion");
   if (!token) return textResp(403, "Access トークンがありません（Access を通過していません）");
 
   try {
-    await verifyToken(token, aud, team);
+    await verifyToken(token, aud, certsUrl);
   } catch (e) {
     return textResp(403, `Access 検証失敗: ${e.message}`);
   }
