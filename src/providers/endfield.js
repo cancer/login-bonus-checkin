@@ -154,18 +154,22 @@ export const endfield = {
 
   credential: {
     label: "Endfield account token",
-    placeholder: "SK_TOKEN_CACHE_KEY の値（token 文字列）",
-    hint: "game.skport.com ログイン後、localStorage の SK_TOKEN_CACHE_KEY の値（token 文字列そのもの）。改行で複数アカウント。",
+    placeholder: "ACCOUNT_TOKEN Cookie の値（URLエンコードのまま可）",
+    hint:
+      "game.skport.com の Cookie『ACCOUNT_TOKEN』の値。DevTools → Application → Cookies → " +
+      "ACCOUNT_TOKEN を Show URL-encoded で表示してコピー。下のスニペット/ブックマークレットでも取れます" +
+      "（HttpOnly で読めない場合は Cookie パネルから手動コピー）。改行で複数アカウント。",
     multiAccount: true,
     extract: {
       site: "https://game.skport.com/endfield/sign-in",
-      // SK_TOKEN_CACHE_KEY は token 文字列そのもの。生の値をコピーする。
-      script: `copy(localStorage.getItem("SK_TOKEN_CACHE_KEY"))`,
-      // コンソール貼り付けが拒否される場合用。ブックマークバーにドラッグして使う。
+      // ACCOUNT_TOKEN Cookie を document.cookie から読む。HttpOnly なら取れないので手動誘導。
+      script:
+        `(()=>{const m=document.cookie.match(/(?:^|; )ACCOUNT_TOKEN=([^;]+)/);` +
+        `copy(m?m[1]:'NOT FOUND: ACCOUNT_TOKEN は HttpOnly かも。Cookie パネルから手動コピーしてください')})()`,
       bookmarklet:
-        `javascript:(async()=>{const t=localStorage.getItem('SK_TOKEN_CACHE_KEY');` +
-        `if(!t){alert('SK_TOKEN_CACHE_KEY が見つかりません。ログイン済みか確認してください');return;}` +
-        `try{await navigator.clipboard.writeText(t);alert('Endfield token をコピーしました。/admin の欄に貼り付けてください');}` +
+        `javascript:(async()=>{const m=document.cookie.match(/(?:^|; )ACCOUNT_TOKEN=([^;]+)/);` +
+        `if(!m){alert('ACCOUNT_TOKEN が document.cookie に無い（HttpOnly かも）。DevTools → Application → Cookies → ACCOUNT_TOKEN を Show URL-encoded で手動コピーしてください');return;}` +
+        `try{await navigator.clipboard.writeText(m[1]);alert('ACCOUNT_TOKEN をコピーしました。/admin の欄に貼り付けてください');}` +
         `catch(e){alert('コピー失敗: '+e.message)}})()`,
     },
   },

@@ -61,12 +61,10 @@ export const myProvider = {
 
 **Endfield**
 1. <https://game.skport.com/endfield/sign-in> にログイン
-2. F12 → Console:
-   ```js
-   copy(localStorage.getItem("SK_TOKEN_CACHE_KEY"))
-   ```
-   （`SK_TOKEN_CACHE_KEY` の値は token 文字列そのもの。保存するのは短命な cred ではなく、
-   OAuth に通して cred を再生成できる長寿命の **account token**）
+2. DevTools → Application → Cookies → `https://game.skport.com` → **`ACCOUNT_TOKEN`** を選び、
+   **Show URL-encoded** にチェックして値をコピー（`/admin` のスニペット/ブックマークレットでも可）
+   - 保存するのは短命な cred ではなく、OAuth に通して cred を再生成できる長寿命の **ACCOUNT_TOKEN**
+   - `SK_TOKEN_CACHE_KEY`(localStorage) は skport 内部トークンで別物。使わない
 
 > どちらも複数アカウントは**改行区切り**で1つの入力欄にまとめて貼れる。
 
