@@ -29,11 +29,19 @@ function b64urlToString(s) {
   return new TextDecoder().decode(b64urlToBytes(s));
 }
 
+// ACCESS_TEAM_DOMAIN は「素のドメイン」「https付き」「フル certs URL」いずれでも受ける。
+function certsUrl(teamDomainOrUrl) {
+  let v = String(teamDomainOrUrl).trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  if (!v.includes("/cdn-cgi/access/certs")) v = `${v}/cdn-cgi/access/certs`;
+  return v;
+}
+
 async function getKeys(teamDomain) {
-  const url = `https://${teamDomain}/cdn-cgi/access/certs`;
+  const url = certsUrl(teamDomain);
   if (jwksCache && jwksCache.url === url) return jwksCache.keys;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`JWKS 取得失敗: ${res.status}`);
+  if (!res.ok) throw new Error(`JWKS 取得失敗: ${res.status} (${url})`);
   const json = await res.json();
   jwksCache = { url, keys: json.keys || [] };
   return jwksCache.keys;
