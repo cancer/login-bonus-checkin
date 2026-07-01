@@ -9,7 +9,7 @@
  *   それ以外 … 手動トリガ（TRIGGER_TOKEN で保護、動作確認用）
  *
  * クレデンシャル: KV (binding CREDS) に /admin から保存。ローカルは env の CRED_<ID> でも可。
- * その他 secret: DISCORD_WEBHOOK（通知先／任意）, TRIGGER_TOKEN（手動トリガ保護／任意）
+ * その他 secret: SLACK_WEBHOOK（通知先／任意）, TRIGGER_TOKEN（手動トリガ保護／任意）
  * vars: PROVIDERS（実行 id・空白区切り／未指定は全登録）, NOTIFY_ON_SUCCESS（"1"で成功時も通知）
  */
 

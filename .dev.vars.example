@@ -14,5 +14,5 @@ CRED_HOYOLAB="ltuid_v2=ここにltuid_v2; ltoken_v2=ここにltoken_v2"
 CRED_ENDFIELD="ここにaccount_token"
 
 # --- 共通 ---
-DISCORD_WEBHOOK=""   # 通知先（任意）
+SLACK_WEBHOOK=""     # 通知先 Slack Incoming Webhook（任意）
 TRIGGER_TOKEN=""     # 手動トリガ保護（任意）

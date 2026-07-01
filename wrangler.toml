@@ -27,7 +27,7 @@ HOYOLAB_GAMES = "zzz"
 NOTIFY_ON_SUCCESS = "0"
 
 # --- 秘密（wrangler secret put で登録。ここには書かない）---
-#   DISCORD_WEBHOOK : 通知先 Discord Webhook URL（任意）
+#   SLACK_WEBHOOK   : 通知先 Slack Incoming Webhook URL（任意）
 #   TRIGGER_TOKEN   : 手動トリガ用トークン（任意）
 #
 # クレデンシャル本体（HoYoLAB Cookie / Endfield token）は secret ではなく

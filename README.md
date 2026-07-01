@@ -15,7 +15,7 @@ src/
 ├─ runner.js             共通: クレデンシャルのあるプロバイダを実行・結果集計
 ├─ credentials.js        共通: クレデンシャル層（KV優先 / env フォールバック）
 ├─ admin.js              /admin: KV へ保存する管理UI（Cloudflare Access で保護）
-├─ notify.js             共通: Discord 通知（宛先追加もここ）
+├─ notify.js             共通: Slack 通知（宛先追加もここ）
 └─ providers/
    ├─ registry.js        プロバイダ登録所
    ├─ hoyolab.js         HoYoLAB（zzz / gi / hsr / hi3 / tot）
@@ -83,7 +83,7 @@ npx wrangler kv namespace create CREDS
 ### 2. デプロイ
 
 ```bash
-npx wrangler secret put DISCORD_WEBHOOK   # 通知先（任意）
+npx wrangler secret put SLACK_WEBHOOK     # 通知先（任意）
 npx wrangler secret put TRIGGER_TOKEN     # 手動トリガ保護（任意）
 npm run deploy
 ```
@@ -130,14 +130,14 @@ curl  "http://localhost:8787/__scheduled?cron=10+16+*+*+*"  # Cron 擬似発火
 | vars | `PROVIDERS` | 実行するプロバイダ id（空白区切り）。空ならクレデンシャルのある全プロバイダ |
 | vars | `HOYOLAB_GAMES` | HoYoLAB で受け取るゲーム（空白区切り）既定 `zzz` |
 | vars | `NOTIFY_ON_SUCCESS` | `1` で成功時も通知 |
-| secret | `DISCORD_WEBHOOK` | 通知先（任意） |
+| secret | `SLACK_WEBHOOK` | 通知先 Slack Incoming Webhook（任意） |
 | secret | `TRIGGER_TOKEN` | 手動 fetch トリガの保護（任意） |
 | env(dev) | `CRED_<ID>` | ローカル `npm run dev` 用のクレデンシャル・フォールバック |
 
 ## 運用の肝：セッション失効
 
 唯一の手動ポイントはセッションが切れたとき（HoYoLAB なら retcode `-100`、Endfield なら OAuth 段でエラー）。
-`DISCORD_WEBHOOK` を設定しておくと失効時に通知が飛ぶので、**`/admin` を開いて貼り直すだけ**（CLI 不要）。
+`SLACK_WEBHOOK` を設定しておくと失効時に通知が飛ぶので、**`/admin` を開いて貼り直すだけ**（CLI 不要）。
 
 ## 注意
 
