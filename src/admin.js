@@ -24,7 +24,31 @@ function page(body) {
   button{margin-top:1.2rem;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer}
   .ok{background:#e6ffed;border:1px solid #3fb950;padding:.5rem .8rem;border-radius:6px}
   .set{color:#3fb950} .unset{color:#999}
+  .extract{background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:.5rem .7rem;margin:.3rem 0 .5rem;font-size:.85rem}
+  .extract code{display:block;white-space:pre-wrap;word-break:break-all;background:#fff;border:1px solid #d0d7de;border-radius:4px;padding:.4rem;margin:.4rem 0;font-family:ui-monospace,monospace}
+  .extract a{font-weight:600}
+  .copybtn{margin:0;padding:.3rem .8rem;font-size:.8rem}
 </style></head><body>${body}</body></html>`;
+}
+
+// 取得補助 UI（credential.extract 宣言から生成）
+function extractBlock(p) {
+  const e = p.credential?.extract;
+  if (!e) return "";
+  const open = e.site ? `<a href="${esc(e.site)}" target="_blank" rel="noopener">${esc(e.site)}</a> を開き、` : "";
+  if (e.script) {
+    const id = `script-${esc(p.id)}`;
+    return `<div class="extract">
+      ${open}F12 → Console に貼って実行すると、値がクリップボードにコピーされます。
+      それを下の欄に貼り付け。
+      <code id="${id}">${esc(e.script)}</code>
+      <button type="button" class="copybtn" data-copy="${id}">スクリプトをコピー</button>
+    </div>`;
+  }
+  if (e.manual) {
+    return `<div class="extract">${open}${esc(e.manual)}</div>`;
+  }
+  return "";
 }
 
 async function renderForm(env, saved) {
@@ -38,6 +62,7 @@ async function renderForm(env, saved) {
     rows.push(`
       <h2>${esc(p.name)} <small>[${esc(p.id)}]</small> — ${state}</h2>
       <div class="hint">${esc(c.hint || "")}</div>
+      ${extractBlock(p)}
       <textarea name="${esc(p.id)}" placeholder="${esc(c.placeholder || "")}">${esc(current)}</textarea>`);
   }
   return page(`
@@ -47,7 +72,16 @@ async function renderForm(env, saved) {
       ${rows.join("")}
       <div><button type="submit">保存</button></div>
     </form>
-    <p class="hint">値はブラウザからコピーした生文字列をそのまま。複数アカウントは改行で区切ります。空のまま保存するとそのプロバイダは無効化されます。</p>`);
+    <p class="hint">値はブラウザからコピーした生文字列をそのまま。複数アカウントは改行で区切ります。空のまま保存するとそのプロバイダは無効化されます。</p>
+    <script>
+      document.querySelectorAll(".copybtn").forEach((b) => b.addEventListener("click", () => {
+        const el = document.getElementById(b.dataset.copy);
+        navigator.clipboard.writeText(el.textContent).then(() => {
+          const t = b.textContent; b.textContent = "コピーしました";
+          setTimeout(() => (b.textContent = t), 1500);
+        });
+      }));
+    </script>`);
 }
 
 export async function handleAdmin(req, env) {

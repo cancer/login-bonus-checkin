@@ -83,6 +83,14 @@ export const hoyolab = {
     placeholder: "ltuid_v2=...; ltoken_v2=...",
     hint: "hoyolab.com の Cookie パネルから ltuid_v2 と ltoken_v2 を「ltuid_v2=値; ltoken_v2=値」の形で。改行で複数アカウント。",
     multiAccount: true,
+    extract: {
+      site: "https://www.hoyolab.com/",
+      // ltuid_v2 / ltoken_v2 は HttpOnly のためページ上の JS からは読めない → 手動コピーのみ。
+      manual:
+        "DevTools → Application → Cookies → https://www.hoyolab.com で ltuid_v2 と ltoken_v2 " +
+        "の値をコピーし、「ltuid_v2=値; ltoken_v2=値」の1行にして下の欄へ。" +
+        "（HttpOnly Cookie なのでスクリプトでは取得不可）",
+    },
   },
 
   /**

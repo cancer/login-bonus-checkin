@@ -157,6 +157,11 @@ export const endfield = {
     placeholder: "SK_TOKEN_CACHE_KEY の content",
     hint: "game.skport.com ログイン後、localStorage の SK_TOKEN_CACHE_KEY の content。改行で複数アカウント。",
     multiAccount: true,
+    extract: {
+      site: "https://game.skport.com/endfield/sign-in",
+      // localStorage は JS から読めるのでスクリプトで自動化可（clipboard にコピー）。
+      script: `copy(JSON.parse(localStorage.getItem("SK_TOKEN_CACHE_KEY")).content)`,
+    },
   },
   // 生文字列 → 1 アカウント分の token に正規化（URL エンコードを剥がす）
   parseAccount: (raw) => decodeURIComponent(raw.trim()),
