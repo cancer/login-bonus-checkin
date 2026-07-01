@@ -81,6 +81,8 @@ async function renderForm(env, saved) {
     </form>
     <p class="hint">値はブラウザからコピーした生文字列をそのまま。複数アカウントは改行で区切ります。空のまま保存するとそのプロバイダは無効化されます。</p>
     <script>
+      // 保存メッセージは残しつつ、アドレスバーの ?saved=1 を消す
+      if (location.search) history.replaceState(null, "", location.pathname);
       document.querySelectorAll(".copybtn").forEach((b) => b.addEventListener("click", () => {
         const el = document.getElementById(b.dataset.copy);
         navigator.clipboard.writeText(el.textContent).then(() => {
