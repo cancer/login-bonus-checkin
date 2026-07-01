@@ -15,7 +15,7 @@ crons = ["10 16 * * *", "10 20 * * *"]
 # 出力された id を下の id= に貼る。
 [[kv_namespaces]]
 binding = "CREDS"
-id = "ここにKV名前空間のIDを貼る"
+id = "d2f5c650aff14d7cbb9a30432d79535c"
 
 [vars]
 # 実行するプロバイダ id（空白区切り）。未指定なら全登録プロバイダのうち
