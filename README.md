@@ -63,9 +63,10 @@ export const myProvider = {
 1. <https://game.skport.com/endfield/sign-in> にログイン
 2. F12 → Console:
    ```js
-   copy(JSON.parse(localStorage.getItem("SK_TOKEN_CACHE_KEY")).content)
+   copy(localStorage.getItem("SK_TOKEN_CACHE_KEY"))
    ```
-   （保存するのは短命な cred ではなく、OAuth に通して cred を再生成できる長寿命の **account token**）
+   （`SK_TOKEN_CACHE_KEY` の値は token 文字列そのもの。保存するのは短命な cred ではなく、
+   OAuth に通して cred を再生成できる長寿命の **account token**）
 
 > どちらも複数アカウントは**改行区切り**で1つの入力欄にまとめて貼れる。
 

@@ -154,18 +154,19 @@ export const endfield = {
 
   credential: {
     label: "Endfield account token",
-    placeholder: "SK_TOKEN_CACHE_KEY の content",
-    hint: "game.skport.com ログイン後、localStorage の SK_TOKEN_CACHE_KEY の content。改行で複数アカウント。",
+    placeholder: "SK_TOKEN_CACHE_KEY の値（token 文字列）",
+    hint: "game.skport.com ログイン後、localStorage の SK_TOKEN_CACHE_KEY の値（token 文字列そのもの）。改行で複数アカウント。",
     multiAccount: true,
     extract: {
       site: "https://game.skport.com/endfield/sign-in",
-      // localStorage は JS から読めるのでスクリプトで自動化可（clipboard にコピー）。
-      script: `copy(JSON.parse(localStorage.getItem("SK_TOKEN_CACHE_KEY")).content)`,
+      // SK_TOKEN_CACHE_KEY は token 文字列そのもの。生の値をコピーする。
+      script: `copy(localStorage.getItem("SK_TOKEN_CACHE_KEY"))`,
       // コンソール貼り付けが拒否される場合用。ブックマークバーにドラッグして使う。
       bookmarklet:
-        `javascript:(async()=>{try{const t=JSON.parse(localStorage.getItem('SK_TOKEN_CACHE_KEY')).content;` +
-        `await navigator.clipboard.writeText(t);alert('Endfield token をコピーしました。/admin の欄に貼り付けてください');}` +
-        `catch(e){alert('取得失敗: '+e.message)}})()`,
+        `javascript:(async()=>{const t=localStorage.getItem('SK_TOKEN_CACHE_KEY');` +
+        `if(!t){alert('SK_TOKEN_CACHE_KEY が見つかりません。ログイン済みか確認してください');return;}` +
+        `try{await navigator.clipboard.writeText(t);alert('Endfield token をコピーしました。/admin の欄に貼り付けてください');}` +
+        `catch(e){alert('コピー失敗: '+e.message)}})()`,
     },
   },
   // 生文字列 → 1 アカウント分の token に正規化（URL エンコードを剥がす）
