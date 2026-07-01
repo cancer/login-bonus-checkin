@@ -2,10 +2,13 @@
  * プロバイダ登録所。サイトを増やすときはここに import して ALL に足すだけ。
  *
  * プロバイダ interface:
- *   id: string                       一意なキー（env / PROVIDERS で指定する名前）
+ *   id: string                       一意なキー（PROVIDERS / KV キー / 表示で使う）
  *   name: string                     表示名
- *   isConfigured(env): boolean       必要な秘密が揃っているか
- *   run(env): Promise<Result[]>      Result = { label, ok, code, message }
+ *   credential: {                    必要なクレデンシャルの宣言（/admin フォーム等を生成）
+ *     label, placeholder, hint, multiAccount
+ *   }
+ *   parseAccount?(raw): any          生文字列1行 → run が使う形（省略時は trim）
+ *   run(ctx, accounts): Promise<Result[]>   Result = { label, ok, code, message }
  */
 
 import { hoyolab } from "./hoyolab.js";
@@ -17,13 +20,13 @@ export const ALL = [
 ];
 
 /**
- * 実行対象を解決する。
- * env.PROVIDERS が指定されていればその id だけ、無ければ「設定済みの」全プロバイダ。
+ * 実行候補プロバイダ。env.PROVIDERS があればその id だけ、無ければ全登録。
+ * 「クレデンシャルが揃っているか」の判定はクレデンシャル層でのみ行う（ここは知らない）。
  */
-export function resolveProviders(env) {
+export function selectProviders(env) {
   if (env.PROVIDERS) {
     const want = new Set(env.PROVIDERS.split(/\s+/).map((s) => s.trim().toLowerCase()).filter(Boolean));
     return ALL.filter((p) => want.has(p.id));
   }
-  return ALL.filter((p) => p.isConfigured(env));
+  return ALL;
 }

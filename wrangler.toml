@@ -10,9 +10,16 @@ compatibility_flags = ["nodejs_compat"]
 [triggers]
 crons = ["10 16 * * *", "10 20 * * *"]
 
+# クレデンシャル保存先。/admin から書き込む。作成:
+#   npx wrangler kv namespace create CREDS
+# 出力された id を下の id= に貼る。
+[[kv_namespaces]]
+binding = "CREDS"
+id = "ここにKV名前空間のIDを貼る"
+
 [vars]
-# 実行するプロバイダ id（空白区切り）。未指定なら「秘密が設定済み」の全プロバイダを実行。
-# 例: PROVIDERS = "hoyolab endfield"
+# 実行するプロバイダ id（空白区切り）。未指定なら全登録プロバイダのうち
+# クレデンシャルが設定済みのものを実行。 例: PROVIDERS = "hoyolab endfield"
 PROVIDERS = ""
 # HoYoLAB で受け取るゲーム（空白区切り）。例: "zzz gi hsr"
 HOYOLAB_GAMES = "zzz"
@@ -20,7 +27,10 @@ HOYOLAB_GAMES = "zzz"
 NOTIFY_ON_SUCCESS = "0"
 
 # --- 秘密（wrangler secret put で登録。ここには書かない）---
-#   HOYOLAB_COOKIE  : "ltuid_v2=...; ltoken_v2=..."  改行で複数アカウント
-#   ENDFIELD_TOKEN  : Gryphline account token  改行で複数アカウント
 #   DISCORD_WEBHOOK : 通知先 Discord Webhook URL（任意）
 #   TRIGGER_TOKEN   : 手動トリガ用トークン（任意）
+#
+# クレデンシャル本体（HoYoLAB Cookie / Endfield token）は secret ではなく
+# /admin から KV に保存する。ローカル開発では .dev.vars の CRED_<ID> でも可。
+#
+# /admin は Cloudflare Access で必ず保護すること（README 参照）。

@@ -6,15 +6,18 @@
 ## 設計方針
 
 - **ブラウザログインを毎日踏まない。** 抽出済みの長寿命セッション（Cookie/トークン）で受け取り API を直接叩く。bot 対策（CAPTCHA 等）はログイン画面側の仕掛けなので発火しにくい。
-- **サイト1個 = プロバイダ1個。** 共通部分（Cron・実行ループ・通知・秘密管理）は1回だけ。サイトを増やすときは `src/providers/` にファイルを足して登録するだけ。
+- **サイト1個 = プロバイダ1個。** 共通部分（Cron・実行ループ・通知・クレデンシャル層）は1回だけ。サイトを増やすときは `src/providers/` にファイルを足して登録するだけ。
+- **クレデンシャルも宣言ベース。** プロバイダは env も保存先も知らない。「何が要るか」を `credential` で宣言し、フレームワークが KV から読んでパース済みアカウントを注入する。`/admin` フォームもこの宣言から自動生成。
 
 ```
 src/
-├─ index.js              共通エントリ: Cron / 手動トリガ → runAll → notify
-├─ runner.js             共通: 対象プロバイダを解決して順に実行・結果集計
+├─ index.js              共通エントリ: ルーティング(/admin | 手動トリガ) + Cron
+├─ runner.js             共通: クレデンシャルのあるプロバイダを実行・結果集計
+├─ credentials.js        共通: クレデンシャル層（KV優先 / env フォールバック）
+├─ admin.js              /admin: KV へ保存する管理UI（Cloudflare Access で保護）
 ├─ notify.js             共通: Discord 通知（宛先追加もここ）
 └─ providers/
-   ├─ registry.js        プロバイダ登録所 + 実行対象の解決
+   ├─ registry.js        プロバイダ登録所
    ├─ hoyolab.js         HoYoLAB（zzz / gi / hsr / hi3 / tot）
    └─ endfield.js        Arknights: Endfield（SKPort / Gryphline）
 ```
@@ -28,90 +31,113 @@ src/
 
 ```js
 export const myProvider = {
-  id: "mysite",                       // PROVIDERS / 表示で使う一意キー
+  id: "mysite",                       // PROVIDERS / KV キー / 表示で使う一意キー
   name: "MySite",                     // 表示名
-  isConfigured(env) {                 // 必要な秘密が揃っているか
-    return Boolean(env.MYSITE_TOKEN);
+  credential: {                       // 必要なクレデンシャルの宣言（/admin を生成）
+    label: "MySite token",
+    placeholder: "...",
+    hint: "○○ から △△ をコピー。改行で複数アカウント。",
+    multiAccount: true,
   },
-  async run(env) {                    // 受け取り処理
-    // ... fetch などで受け取り ...
+  parseAccount: (raw) => raw.trim(),  // 生文字列1行 → run が使う形（省略可）
+  async run(ctx, accounts) {          // accounts = パース済みアカウント配列
+    // ctx.env は非秘密設定用。クレデンシャルは accounts で注入される。
     return [{ label: "daily", ok: true, code: "0", message: "受け取り成功" }];
   },
 };
 ```
 
-`run` は `{ label, ok, code, message }` の配列を返すだけ。あとは共通部分が集計・通知してくれる。
+`run` は `{ label, ok, code, message }` の配列を返すだけ。集計・通知・クレデンシャル注入は共通部分がやる。
 
-## セットアップ（HoYoLAB の例）
+## クレデンシャルの取得（各サイトで1回）
 
-### 1. Cookie を抽出
+保存は後述の `/admin` から。まず各サイトで値をコピーする。
 
-1. ブラウザで <https://www.hoyolab.com/> にログイン
+**HoYoLAB**
+1. <https://www.hoyolab.com/> にログイン
 2. DevTools → Application → Cookies → `https://www.hoyolab.com`
-3. `ltuid_v2` と `ltoken_v2` をコピーし、`ltuid_v2=値; ltoken_v2=値` の1行にする
-   （`ltoken_v2` は HttpOnly なので DevTools から手動コピー）
+3. `ltuid_v2` と `ltoken_v2` をコピーし `ltuid_v2=値; ltoken_v2=値` の1行にする
+   （`ltoken_v2` は HttpOnly なので Cookie パネルから手動コピー）
 
-## セットアップ（Endfield の例）
-
-### 1. account token を抽出
-
-1. ブラウザで <https://game.skport.com/endfield/sign-in> にログイン
-2. F12 → Console で localStorage の token を取り出す:
-
+**Endfield**
+1. <https://game.skport.com/endfield/sign-in> にログイン
+2. F12 → Console:
    ```js
    copy(JSON.parse(localStorage.getItem("SK_TOKEN_CACHE_KEY")).content)
    ```
+   （保存するのは短命な cred ではなく、OAuth に通して cred を再生成できる長寿命の **account token**）
 
-   （実装はこの **account token** を OAuth に通して cred+salt を毎回再生成するので、
-   保存するのは短命な cred ではなく長寿命の token）
-3. 得られた文字列を `ENDFIELD_TOKEN` に入れる
+> どちらも複数アカウントは**改行区切り**で1つの入力欄にまとめて貼れる。
 
-> token のキー名はサイト更新で変わることがある。Application → Local Storage を見て
-> token らしき値（`SK_TOKEN_CACHE_KEY` など）を確認すること。
+## デプロイ
 
-## ローカル動作確認 / デプロイ
-
-### 2. ローカル動作確認
+### 1. KV 名前空間を作る（クレデンシャル保存先）
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars   # .dev.vars に各プロバイダの秘密を記入
+npx wrangler kv namespace create CREDS
+```
+
+出力された `id` を `wrangler.toml` の `[[kv_namespaces]]` の `id=` に貼る。
+
+### 2. デプロイ
+
+```bash
+npx wrangler secret put DISCORD_WEBHOOK   # 通知先（任意）
+npx wrangler secret put TRIGGER_TOKEN     # 手動トリガ保護（任意）
+npm run deploy
+```
+
+### 3. `/admin` を Cloudflare Access で保護する（必須）
+
+`/admin` はクレデンシャルを読み書きするので、**無防備だと誰でもセッションを奪える**。
+
+1. Cloudflare Zero Trust → Access → Applications → Add（Self-hosted）
+2. アプリのドメイン/パスを **`<your-worker-domain>/admin`** に設定
+3. ポリシーで自分のメール（Google 等）だけ許可
+4. **workers.dev ルートを無効化**（Worker 設定）。Access は独自ドメイン側にしか掛からないため、
+   `*.workers.dev` が生きていると `/admin` を Access 無しで叩けてしまう。必ず切る。
+
+> コード側も保険として、`Cf-Access-Jwt-Assertion` ヘッダ（Access が付与）が無ければ
+> `/admin` を 403 で塞ぐ（fail-closed）。ただし workers.dev 直アクセスでは偽装可能なので、
+> 上の「独自ドメイン + workers.dev 無効化」が本命の防御。
+
+### 4. クレデンシャルを登録
+
+`https://<your-worker-domain>/admin` を開き（Access のログインを通過）、各欄に前段でコピーした値を貼って保存。
+**以後の更新は CLI も再デプロイも不要** — 失効したらこのページを開いて貼り直すだけ（スマホでも可）。
+
+## ローカル動作確認
+
+```bash
+npm install
+cp .dev.vars.example .dev.vars   # CRED_HOYOLAB / CRED_ENDFIELD に値を記入（env フォールバック）
 npm run dev
 ```
 
 ```bash
-curl "http://localhost:8787/"                              # 即実行
-curl "http://localhost:8787/__scheduled?cron=10+16+*+*+*"  # Cron 擬似発火
+# localhost は Access 素通し。/admin から local KV に書いてもよい
+open  "http://localhost:8787/admin"
+curl  "http://localhost:8787/"                              # 即実行
+curl  "http://localhost:8787/__scheduled?cron=10+16+*+*+*"  # Cron 擬似発火
 ```
-
-### 3. デプロイ
-
-```bash
-npx wrangler secret put HOYOLAB_COOKIE    # HoYoLAB を使うなら
-npx wrangler secret put ENDFIELD_TOKEN    # Endfield を使うなら
-npx wrangler secret put DISCORD_WEBHOOK   # 任意
-npx wrangler secret put TRIGGER_TOKEN     # 任意
-npm run deploy
-```
-
-`npm run tail` でログ確認。以後は `wrangler.toml` の `crons` に従い自動実行。
 
 ## 設定一覧
 
 | 種別 | 名前 | 用途 |
 |---|---|---|
-| vars | `PROVIDERS` | 実行するプロバイダ id（空白区切り）。空なら設定済みを全実行 |
+| KV | `cred:<id>` | 各プロバイダのクレデンシャル（`/admin` から保存） |
+| vars | `PROVIDERS` | 実行するプロバイダ id（空白区切り）。空ならクレデンシャルのある全プロバイダ |
 | vars | `HOYOLAB_GAMES` | HoYoLAB で受け取るゲーム（空白区切り）既定 `zzz` |
 | vars | `NOTIFY_ON_SUCCESS` | `1` で成功時も通知 |
-| secret | `HOYOLAB_COOKIE` | `ltuid_v2=...; ltoken_v2=...`（改行で複数アカウント） |
-| secret | `ENDFIELD_TOKEN` | Gryphline account token（改行で複数アカウント） |
 | secret | `DISCORD_WEBHOOK` | 通知先（任意） |
 | secret | `TRIGGER_TOKEN` | 手動 fetch トリガの保護（任意） |
+| env(dev) | `CRED_<ID>` | ローカル `npm run dev` 用のクレデンシャル・フォールバック |
 
 ## 運用の肝：セッション失効
 
 唯一の手動ポイントはセッションが切れたとき（HoYoLAB なら retcode `-100`、Endfield なら OAuth 段でエラー）。
-`DISCORD_WEBHOOK` を設定しておくと失効時に通知が飛ぶので、取り直して `wrangler secret put` で上書きするだけ。
+`DISCORD_WEBHOOK` を設定しておくと失効時に通知が飛ぶので、**`/admin` を開いて貼り直すだけ**（CLI 不要）。
 
 ## 注意
 

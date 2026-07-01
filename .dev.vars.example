@@ -1,13 +1,17 @@
-# ローカル開発用の秘密。これをコピーして `.dev.vars` を作る（.dev.vars は git 無視）。
-# 本番(Cloudflare)へは `wrangler secret put <NAME>` で別途登録すること。
+# ローカル開発用の変数。これをコピーして `.dev.vars` を作る（.dev.vars は git 無視）。
+#
+# 本番では:
+#   - クレデンシャル(CRED_*) は /admin から KV に保存する（下の CRED_* は不要）
+#   - DISCORD_WEBHOOK / TRIGGER_TOKEN は `wrangler secret put <NAME>` で登録
+#
+# 以下はローカル `npm run dev` 用の env フォールバック。
+# ローカルでも /admin（localhost は素通し）から KV に書けば CRED_* は不要。
 
-# --- HoYoLAB プロバイダ ---
-# 単一アカウント。複数なら改行で区切る。
-HOYOLAB_COOKIE="ltuid_v2=ここにltuid_v2; ltoken_v2=ここにltoken_v2"
-
-# --- Endfield プロバイダ (SKPort / Gryphline) ---
-# Gryphline account token。改行で複数アカウント可。
-ENDFIELD_TOKEN="ここにaccount_token"
+# --- クレデンシャル（生文字列そのまま。複数アカウントは改行区切り） ---
+# HoYoLAB: Cookie パネルの ltuid_v2 / ltoken_v2
+CRED_HOYOLAB="ltuid_v2=ここにltuid_v2; ltoken_v2=ここにltoken_v2"
+# Endfield: localStorage SK_TOKEN_CACHE_KEY の content
+CRED_ENDFIELD="ここにaccount_token"
 
 # --- 共通 ---
 DISCORD_WEBHOOK=""   # 通知先（任意）

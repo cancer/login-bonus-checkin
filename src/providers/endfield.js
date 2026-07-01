@@ -152,15 +152,20 @@ export const endfield = {
   id: "endfield",
   name: "Arknights: Endfield",
 
-  isConfigured(env) {
-    return Boolean(env.ENDFIELD_TOKEN);
+  credential: {
+    label: "Endfield account token",
+    placeholder: "SK_TOKEN_CACHE_KEY の content",
+    hint: "game.skport.com ログイン後、localStorage の SK_TOKEN_CACHE_KEY の content。改行で複数アカウント。",
+    multiAccount: true,
   },
+  // 生文字列 → 1 アカウント分の token に正規化（URL エンコードを剥がす）
+  parseAccount: (raw) => decodeURIComponent(raw.trim()),
 
-  async run(env) {
-    const tokens = env.ENDFIELD_TOKEN.split("\n")
-      .map((s) => decodeURIComponent(s.trim()))
-      .filter(Boolean);
-
+  /**
+   * @param {{env:object}} ctx
+   * @param {string[]} tokens  フレームワークが注入する account token 群
+   */
+  async run(ctx, tokens) {
     const out = [];
     for (let i = 0; i < tokens.length; i++) {
       const accPrefix = tokens.length > 1 ? `acc${i + 1}/` : "";

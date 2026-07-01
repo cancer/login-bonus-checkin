@@ -77,17 +77,21 @@ export const hoyolab = {
   id: "hoyolab",
   name: "HoYoLAB",
 
-  /** この env で動かせるか（秘密が揃っているか） */
-  isConfigured(env) {
-    return Boolean(env.HOYOLAB_COOKIE);
+  // 必要なクレデンシャルの宣言。/admin フォーム・抽出手順・検証はここから生成される。
+  credential: {
+    label: "HoYoLAB Cookie",
+    placeholder: "ltuid_v2=...; ltoken_v2=...",
+    hint: "hoyolab.com の Cookie パネルから ltuid_v2 と ltoken_v2 を「ltuid_v2=値; ltoken_v2=値」の形で。改行で複数アカウント。",
+    multiAccount: true,
   },
 
   /**
+   * @param {{env:object}} ctx  非秘密の設定 (HOYOLAB_GAMES 等) 用
+   * @param {string[]} cookies  1 アカウント = 1 Cookie 文字列（フレームワークが注入）
    * @returns {Promise<Array<{label:string, ok:boolean, code:string, message:string}>>}
    */
-  async run(env) {
-    const cookies = env.HOYOLAB_COOKIE.split("\n").map((s) => s.trim()).filter(Boolean);
-    const games = (env.HOYOLAB_GAMES || env.GAMES || "zzz")
+  async run(ctx, cookies) {
+    const games = (ctx.env.HOYOLAB_GAMES || ctx.env.GAMES || "zzz")
       .split(/\s+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
 
     const out = [];
