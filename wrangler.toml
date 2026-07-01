@@ -3,6 +3,8 @@ main = "src/index.js"
 compatibility_date = "2025-06-01"
 # Endfield プロバイダの署名で node:crypto (HMAC-SHA256 + MD5) を使うため必須。
 compatibility_flags = ["nodejs_compat"]
+# Preview URL は Access 対象外の別ホストになり得る迂回口なので無効化。
+preview_urls = false
 
 # Cron Triggers (UTC)。HoYoLAB は UTC+8 00:00 リセット = 16:00 UTC。
 # 余裕を見て 16:10 と予備 20:10 に実行。受取済みは無害なので複数回流してよい。
