@@ -18,6 +18,10 @@ export async function notify(env, report) {
       lines.push(`${r.ok ? "✅" : "⚠️"} ${r.label}: ${r.message}`);
     }
   }
+  // 失効・エラー時は修復導線として /admin の URL を貼る
+  if (hasError && env.ADMIN_URL) {
+    lines.push(`🔧 修復: ${env.ADMIN_URL}`);
+  }
   const text = `【ログインボーナス】\n${lines.join("\n")}`;
 
   await sendSlack(env, text);

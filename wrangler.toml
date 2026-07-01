@@ -27,6 +27,8 @@ PROVIDERS = ""
 HOYOLAB_GAMES = "zzz"
 # 成功時も通知するなら "1"。既定はエラー時のみ（毎日のスパム防止）。
 NOTIFY_ON_SUCCESS = "0"
+# 失効・エラー時の Slack 通知に貼る修復用 /admin URL。独自ドメインに移したらここを変える。
+ADMIN_URL = "https://login-bonus-checkin.cancer6.workers.dev/admin"
 
 # --- 秘密（wrangler secret put で登録。ここには書かない）---
 #   ACCESS_AUD        : Cloudflare Access アプリの Audience タグ（JWT 検証用）
