@@ -12,7 +12,6 @@
  *
  * クレデンシャル: KV (binding CREDS) に /admin から保存。ローカルは env の CRED_<ID> でも可。
  * secret: SLACK_WEBHOOK（通知先／任意）, ACCESS_AUD / ACCESS_CERTS_URL（Access 検証）
- * vars: PROVIDERS（実行 id・空白区切り／未指定は全登録）, NOTIFY_ON_SUCCESS（"1"で成功時も通知）
  */
 
 import { runAll } from "./runner.js";

@@ -1,11 +1,13 @@
+// 成功時も通知するか。切り替えるだけならここを直接書き換えて deploy する。
+const NOTIFY_ON_SUCCESS = true;
+
 /**
- * 通知（任意）。エラーがあるとき、または NOTIFY_ON_SUCCESS=1 のとき送信。
+ * 通知（任意）。エラーがあるとき、または NOTIFY_ON_SUCCESS のとき送信。
  * 今は Slack のみ。他の宛先を足すならここに分岐を追加する。
  */
 export async function notify(env, report) {
   const hasError = report.some((p) => !p.ok);
-  const notifyOnSuccess = env.NOTIFY_ON_SUCCESS === "1";
-  if (!hasError && !notifyOnSuccess) return;
+  if (!hasError && !NOTIFY_ON_SUCCESS) return;
 
   const lines = [];
   for (const p of report) {

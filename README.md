@@ -29,7 +29,7 @@ src/
 
 ```js
 export const myProvider = {
-  id: "mysite",                       // PROVIDERS / KV キー / 表示で使う一意キー
+  id: "mysite",                       // KV キー / 表示で使う一意キー
   name: "MySite",                     // 表示名
   credential: {                       // 必要なクレデンシャルの宣言（/admin を生成）
     label: "MySite token",
@@ -101,8 +101,6 @@ localhost は Access 素通し。`/admin` で local KV に書ける。`/` は即
 | 種別 | 名前 | 用途 |
 |---|---|---|
 | KV | `cred:<id>` | 各プロバイダのクレデンシャル（`/admin` から保存） |
-| vars | `PROVIDERS` | 実行するプロバイダ id（空白区切り）。空ならクレデンシャルのある全プロバイダ |
-| vars | `NOTIFY_ON_SUCCESS` | `1` で成功時も通知（既定はエラー時のみ） |
 | vars | `ADMIN_URL` | 失敗通知に貼る `/admin` の URL |
 | secret | `ACCESS_AUD` | Cloudflare Access の Audience タグ（JWT 検証） |
 | secret | `ACCESS_CERTS_URL` | Access の JWK(certs) URL（JWT 検証） |

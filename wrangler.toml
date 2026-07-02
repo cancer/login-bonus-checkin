@@ -20,13 +20,6 @@ binding = "CREDS"
 id = "d2f5c650aff14d7cbb9a30432d79535c"
 
 [vars]
-# 実行するプロバイダ id（空白区切り）。未指定なら全登録プロバイダのうち
-# クレデンシャルが設定済みのものを実行。 例: PROVIDERS = "hoyolab endfield"
-PROVIDERS = ""
-# HoYoLAB で受け取るゲーム（空白区切り）。例: "zzz gi hsr"
-HOYOLAB_GAMES = "zzz"
-# 成功時も通知するなら "1"。既定はエラー時のみ（毎日のスパム防止）。
-NOTIFY_ON_SUCCESS = "0"
 # 失効・エラー時の Slack 通知に貼る修復用 /admin URL。独自ドメインに移したらここを変える。
 ADMIN_URL = "https://login-bonus-checkin.cancer6.workers.dev/admin"
 
