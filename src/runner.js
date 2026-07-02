@@ -7,7 +7,7 @@ import { loadCredential, splitAccounts } from "./credentials.js";
  * @returns {Promise<Array<{id:string, name:string, ok:boolean, results:Array, error?:string}>>}
  */
 export async function runAll(env) {
-  const candidates = selectProviders(env);
+  const candidates = selectProviders();
 
   // クレデンシャルの有無で実行対象を絞る
   const active = [];
@@ -17,7 +17,7 @@ export async function runAll(env) {
   }
 
   if (active.length === 0) {
-    throw new Error("実行対象のプロバイダがありません（クレデンシャル未設定 / PROVIDERS 指定ミス）");
+    throw new Error("実行対象のプロバイダがありません（クレデンシャル未設定）");
   }
 
   const ctx = { env };

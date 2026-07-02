@@ -5,7 +5,8 @@
  *
  * 使う秘密 (env):
  *   HOYOLAB_COOKIE : "ltuid_v2=...; ltoken_v2=..."  改行で複数アカウント可
- *   HOYOLAB_GAMES  : 受け取るゲーム（空白区切り）既定 "zzz"  ※vars でも可
+ *
+ * 対象ゲームは zzz 固定。他ゲームも受け取りたくなったら games 配列を編集する。
  */
 
 const ENDPOINTS = {
@@ -94,13 +95,12 @@ export const hoyolab = {
   },
 
   /**
-   * @param {{env:object}} ctx  非秘密の設定 (HOYOLAB_GAMES 等) 用
+   * @param {{env:object}} ctx  未使用（インターフェース合わせ）
    * @param {string[]} cookies  1 アカウント = 1 Cookie 文字列（フレームワークが注入）
    * @returns {Promise<Array<{label:string, ok:boolean, code:string, message:string}>>}
    */
   async run(ctx, cookies) {
-    const games = (ctx.env.HOYOLAB_GAMES || ctx.env.GAMES || "zzz")
-      .split(/\s+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const games = ["zzz"];
 
     const out = [];
     for (let i = 0; i < cookies.length; i++) {
