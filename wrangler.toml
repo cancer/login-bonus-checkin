@@ -6,11 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 # Preview URL は Access 対象外の別ホストになり得る迂回口なので無効化。
 preview_urls = false
 
-# Cron Triggers (UTC)。HoYoLAB は UTC+8 00:00 リセット = 16:00 UTC。
-# 余裕を見て 16:10 と予備 20:10 に実行。受取済みは無害なので複数回流してよい。
-# サイトを増やしてリセット時刻が違う場合は cron を足す。
+# Cron Triggers (UTC)。1日1回のみ。自動アクセスの回数=検知(BAN)リスクなので増やさない。
+# 16:10 UTC = 01:10 JST（受け取りリセット直後）。
 [triggers]
-crons = ["10 16 * * *", "10 20 * * *"]
+crons = ["10 16 * * *"]
 
 # クレデンシャル保存先。/admin から書き込む。作成:
 #   npx wrangler kv namespace create CREDS
