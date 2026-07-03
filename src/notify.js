@@ -1,5 +1,5 @@
 // 成功時も通知するか。切り替えるだけならここを直接書き換えて deploy する。
-const NOTIFY_ON_SUCCESS = true;
+const NOTIFY_ON_SUCCESS = false;
 
 /**
  * 通知（任意）。エラーがあるとき、または NOTIFY_ON_SUCCESS のとき送信。
