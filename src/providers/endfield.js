@@ -3,6 +3,8 @@
  *
  * 方式: 永続トークン ACCOUNT_TOKEN から OAuth で cred+salt を生成し、署名付きで受け取り API を叩く。
  *   HoYoLAB と違い「ブラウザの cred」ではなく長寿命の account token を保存する（cred は短命なので毎回再生成）。
+ *   ACCOUNT_TOKEN は現在 HttpOnly Cookie 化されており、web-api.skport.com/cookie_store/account_token
+ *   （JSON の content）から取り出す。取得手順は下の credential.extract を参照。
  *
  * 署名: sign = MD5( HMAC-SHA256( path + timestamp + headerJSON, salt ) )  ← node:crypto が必要
  *   → wrangler.toml に compatibility_flags = ["nodejs_compat"] が必要。
@@ -23,6 +25,16 @@ const ENDFIELD_GAME_ID = "3";
 const APP_CODE = "6eb76d4e13aa36e6";
 const VNAME = "1.0.0";
 const PLATFORM = "3";
+
+// 「本日は受け取り済み」を表す SKPort の応答コード（10001 = Already Checked In / Nothing to claim）。
+// エラーではなく成功（受け取り済み）として扱う。さもないと受け取り済みの日に毎回エラー通知が飛ぶ。
+const ALREADY_CLAIMED_CODE = 10001;
+
+/** attendance 応答が「本日受け取り済み」を示しているか（コード優先、英語 message は保険） */
+function isAlreadyClaimed(json) {
+  if (json?.code === ALREADY_CLAIMED_CODE) return true;
+  return /already/i.test(String(json?.message ?? ""));
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -131,12 +143,15 @@ async function checkInRole(cred, salt, role) {
   // 出席状況確認
   const statusRes = await fetch(ATTENDANCE_URL, { headers });
   const status = await statusRes.json();
+  if (isAlreadyClaimed(status)) return { alreadyClaimed: true, rewards: [] };
   if (status.code !== 0) throw new Error(status.message || `出席確認エラー: ${status.code}`);
   if (status.data?.hasToday) return { alreadyClaimed: true, rewards: [] };
 
   // 未受取 → 受け取り
   const claimRes = await fetch(ATTENDANCE_URL, { method: "POST", headers, body: null });
   const claim = await claimRes.json();
+  // 受け取り済み（10001 等）はエラーではなく成功扱い。POST が先着で既受取を返す競合も吸収する。
+  if (isAlreadyClaimed(claim)) return { alreadyClaimed: true, rewards: [] };
   if (claim.code !== 0) throw new Error(claim.message || `受け取りエラー: ${claim.code}`);
 
   const rewards = [];
@@ -154,22 +169,40 @@ export const endfield = {
 
   credential: {
     label: "Endfield account token",
-    placeholder: "ACCOUNT_TOKEN Cookie の値（URLエンコードのまま可）",
+    placeholder: "ACCOUNT_TOKEN の値（web-api の content / URLエンコードのまま可）",
     hint:
-      "game.skport.com の Cookie『ACCOUNT_TOKEN』の値。DevTools → Application → Cookies → " +
-      "ACCOUNT_TOKEN を Show URL-encoded で表示してコピー。下のスニペット/ブックマークレットでも取れます" +
-      "（HttpOnly で読めない場合は Cookie パネルから手動コピー）。改行で複数アカウント。",
+      "ACCOUNT_TOKEN は HttpOnly Cookie 化され、game.skport.com の Cookie 一覧には平文で出なくなりました。" +
+      "サインイン済みの状態で下のスニペット/ブックマークレットを実行すると取得できます。" +
+      "手動なら https://web-api.skport.com/cookie_store/account_token を開き JSON の content の値をコピー。" +
+      "改行で複数アカウント。",
     multiAccount: true,
     extract: {
       site: "https://game.skport.com/endfield/sign-in",
-      // ACCOUNT_TOKEN は HttpOnly Cookie でページ JS から読めない → 手動コピーのみ。
-      manual:
-        "DevTools → Application → Cookies → https://game.skport.com で ACCOUNT_TOKEN を選び、" +
-        "Show URL-encoded にチェックして値をコピーし、下の欄へ。（HttpOnly Cookie なのでスクリプト取得不可）",
+      // ACCOUNT_TOKEN は HttpOnly でページから直接読めないが、同一サイトの
+      // web-api.skport.com/cookie_store/account_token が JSON で反射してくれる（要ログイン Cookie）。
+      script:
+        `(async () => {
+  const r = await fetch("https://web-api.skport.com/cookie_store/account_token", { credentials: "include", headers: { Accept: "application/json" } });
+  const d = await r.json();
+  const t = d?.data?.content ?? d?.content ?? d?.data?.code ?? d?.code;
+  if (!t) { console.error("ACCOUNT_TOKEN が取得できませんでした:", d); return; }
+  try { await navigator.clipboard.writeText(t); console.log("%cACCOUNT_TOKEN をコピーしました。/admin の欄に貼り付けてください。", "color:green;font-weight:bold"); }
+  catch { console.log("クリップボードにコピーできませんでした。下の値を手動でコピー:\\n" + t); }
+})();`,
+      bookmarklet:
+        `javascript:(function(){fetch("https://web-api.skport.com/cookie_store/account_token",{credentials:"include",headers:{Accept:"application/json"}}).then(function(r){return r.json();}).then(function(d){var t=(d&&d.data&&(d.data.content||d.data.code))||(d&&(d.content||d.code));if(!t){alert("ACCOUNT_TOKEN が取得できませんでした:\\n"+JSON.stringify(d));return;}navigator.clipboard.writeText(t).then(function(){alert("ACCOUNT_TOKEN をコピーしました。/admin の欄に貼り付けてください。");},function(){window.prompt("下の ACCOUNT_TOKEN をコピーしてください:",t);});}).catch(function(e){alert("取得失敗: "+e);});})();`,
     },
   },
-  // 生文字列 → 1 アカウント分の token に正規化（URL エンコードを剥がす）
-  parseAccount: (raw) => decodeURIComponent(raw.trim()),
+  // 生文字列 → 1 アカウント分の token に正規化。URL エンコードされていれば剥がすが、
+  // web-api の content は既にデコード済みのこともあるため、失敗時は生値を使う。
+  parseAccount: (raw) => {
+    const s = raw.trim();
+    try {
+      return decodeURIComponent(s);
+    } catch {
+      return s;
+    }
+  },
 
   /**
    * @param {{env:object}} ctx
