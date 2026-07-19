@@ -26,6 +26,16 @@ const APP_CODE = "6eb76d4e13aa36e6";
 const VNAME = "1.0.0";
 const PLATFORM = "3";
 
+// 「本日は受け取り済み」を表す SKPort の応答コード（10001 = Already Checked In / Nothing to claim）。
+// エラーではなく成功（受け取り済み）として扱う。さもないと受け取り済みの日に毎回エラー通知が飛ぶ。
+const ALREADY_CLAIMED_CODE = 10001;
+
+/** attendance 応答が「本日受け取り済み」を示しているか（コード優先、英語 message は保険） */
+function isAlreadyClaimed(json) {
+  if (json?.code === ALREADY_CLAIMED_CODE) return true;
+  return /already/i.test(String(json?.message ?? ""));
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** ACCOUNT_TOKEN → cred + salt（OAuth 3 ステップ） */
@@ -133,12 +143,15 @@ async function checkInRole(cred, salt, role) {
   // 出席状況確認
   const statusRes = await fetch(ATTENDANCE_URL, { headers });
   const status = await statusRes.json();
+  if (isAlreadyClaimed(status)) return { alreadyClaimed: true, rewards: [] };
   if (status.code !== 0) throw new Error(status.message || `出席確認エラー: ${status.code}`);
   if (status.data?.hasToday) return { alreadyClaimed: true, rewards: [] };
 
   // 未受取 → 受け取り
   const claimRes = await fetch(ATTENDANCE_URL, { method: "POST", headers, body: null });
   const claim = await claimRes.json();
+  // 受け取り済み（10001 等）はエラーではなく成功扱い。POST が先着で既受取を返す競合も吸収する。
+  if (isAlreadyClaimed(claim)) return { alreadyClaimed: true, rewards: [] };
   if (claim.code !== 0) throw new Error(claim.message || `受け取りエラー: ${claim.code}`);
 
   const rewards = [];
